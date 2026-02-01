@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SubTrack - スマートなサブスク管理 (CloudSync)</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --memo-bg: #f1f5f9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        header {
+            background: var(--card);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.025em;
+        }
+
+        .container { max-width: 500px; margin: 0 auto; padding: 1rem; }
+
+        /* Summary Area */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .summary-card {
+            background: var(--card);
+            padding: 1.25rem 0.75rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .summary-label { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 0.25rem; font-weight: 600; }
+        .summary-value { font-size: 1.25rem; font-weight: 800; color: var(--text-main); }
+
+        /* Controls */
+        .controls { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
+        .search-box { 
+            width: 100%; 
+            padding: 0.8rem 1rem; 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            font-size: 1rem;
+            background: var(--card);
+        }
+        
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: var(--card); border: 1px solid var(--border); color: var(--text-main); }
+        .btn-ghost { background: transparent; color: var(--text-sub); }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.75rem; }
+        .btn-icon { padding: 0.4rem; min-width: 32px; height: 32px; }
+
+        /* Sync Section UI */
+        .sync-box {
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+        }
+
+        /* List Items */
+        .sub-card {
+            background: var(--card);
+            margin-bottom: 1rem;
+            padding: 1.25rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            position: relative;
+            border-left: 5px solid var(--primary);
+        }
+        .sub-card.canceled { opacity: 0.6; border-left-color: var(--text-sub); }
+        
+        .sub-row { display: flex; justify-content: space-between; align-items: flex-start; }
+        .sub-name { font-weight: 700; font-size: 1.1rem; }
+        .sub-amount { font-weight: 800; font-size: 1.1rem; }
+        .sub-meta { font-size: 0.85rem; color: var(--text-sub); margin-top: 0.2rem; }
+        .sub-memo { 
+            margin-top: 0.6rem; 
+            font-size: 0.8rem; 
+            color: var(--text-sub); 
+            background: var(--memo-bg); 
+            padding: 0.4rem 0.6rem; 
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .sub-actions { margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end; }
+        .date-alert { color: var(--danger); font-weight: 700; margin-top: 0.5rem; display: block;}
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.4);
+            display: none; align-items: center; justify-content: center;
+            padding: 1rem; z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+        .modal { background: white; padding: 1.5rem; border-radius: 20px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem; }
+        .form-group input, .form-group select, .form-group textarea { 
+            width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 10px; font-size: 1rem; 
+            font-family: inherit;
+        }
+
+        /* Settings View */
+        .settings-view { display: none; margin-bottom: 1.25rem; background: var(--card); padding: 1.25rem; border-radius: 16px; border: 1px solid var(--border); }
+        
+        .cat-item { 
+            display: flex; 
+            gap: 0.5rem; 
+            align-items: center; 
+            padding: 0.5rem 0; 
+            border-bottom: 1px solid var(--border); 
+        }
+        .cat-name-input { 
+            flex-grow: 1; 
+            padding: 0.4rem 0.6rem; 
+            border: 1px solid transparent; 
+            border-radius: 6px; 
+            font-size: 0.85rem; 
+            font-weight: 600;
+        }
+        .cat-name-input:focus { 
+            border-color: var(--primary); 
+            background: #fff; 
+            outline: none; 
+        }
+
+        .badge { font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 6px; background: #f1f5f9; color: var(--text-sub); margin-left: 0.5rem; }
+        .badge-canceled { background: #fee2e2; color: var(--danger); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">SubTrack</div>
+    <button class="btn btn-ghost" onclick="toggleSettings()">⚙️ 設定/同期</button>
+</header>
+
+<div class="container">
+    <div class="summary-grid">
+        <div class="summary-card">
+            <p class="summary-label">月額換算</p>
+            <p class="summary-value" id="monthlyTotal">¥0</p>
+        </div>
+        <div class="summary-card">
+            <p class="summary-label">年額換算</p>
+            <p class="summary-value" id="yearlyTotal">¥0</p>
+        </div>
+    </div>
+
+    <div id="settingsArea" class="settings-view">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h3 style="font-size:0.9rem;">⚙️ アプリ設定</h3>
+            <button class="btn btn-ghost btn-sm" onclick="toggleSettings()">閉じる</button>
+        </div>
+        
+        <div class="sync-box">
+            <h4 style="font-size:0.8rem; margin-bottom:0.8rem; color:var(--primary);">☁️ GitHubクラウド同期</h4>
+            <div class="form-group">
+                <label style="font-size:0.7rem;">GitHubユーザー名</label>
+                <input type="text" id="ghUser" style="padding:0.4rem; font-size:0.9rem;" placeholder="username">
+            </div>
+            <div class="form-group">
+                <label style="font-size:0.7rem;">リポジトリ名</label>
+                <input type="text" id="ghRepo" style="padding:0.4rem; font-size:0.9rem;" value="my-subsc-data">
+            </div>
+            <div class="form-group">
+                <label style="font-size:0.7rem;">トークン (Fine-grained PAT)</label>
+                <input type="password" id="ghToken" style="padding:0.4rem; font-size:0.9rem;" placeholder="github_pat_...">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveSyncSettings()" style="width:100%;">同期設定を保存</button>
+            
+            <div id="syncControls" class="hidden" style="margin-top:0.8rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                <button class="btn btn-outline btn-sm" onclick="pushToGitHub()" style="background:#f0fdf4;">保存 ↑</button>
+                <button class="btn btn-outline btn-sm" onclick="fetchFromGitHub()" style="background:#eff6ff;">読込 ↓</button>
+            </div>
+        </div>
+
+        <hr style="margin:1.5rem 0; border:0; border-top:1px solid var(--border);">
+
+        <div class="form-group">
+            <label>基本通貨</label>
+            <select id="cfgCurrency" onchange="updateSettings()">
+                <option value="JPY">JPY (¥)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+            </select>
+        </div>
+
+        <div style="margin-top:1.5rem;">
+            <label style="display:block; font-size:0.85rem; font-weight:700; margin-bottom:0.5rem;">カテゴリ管理</label>
+            <div id="categoryManagerList" style="margin-bottom:1rem;"></div>
+            <div style="display:flex; gap:0.5rem;">
+                <input type="text" id="newCatName" class="search-box" style="padding:0.5rem; font-size:0.85rem;" placeholder="新しいカテゴリ名">
+                <button class="btn btn-primary btn-sm" onclick="addCategory()">追加</button>
+            </div>
+        </div>
+
+        <button class="btn btn-outline" style="width: 100%; margin-top:1.5rem;" onclick="exportCSV()">データ出力 (CSV)</button>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="search" class="search-box" placeholder="サービス名で検索..." oninput="render()">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label style="font-size: 0.85rem; color: var(--text-sub); cursor: pointer;">
+                <input type="checkbox" id="showCanceled" onchange="render()" style="margin-right: 0.4rem;"> 
+                解約済を表示
+            </label>
+            <button class="btn btn-primary" onclick="openModal()">＋ 追加する</button>
+        </div>
+    </div>
+
+    <div id="list"></div>
+</div>
+
+<div id="modal" class="modal-overlay">
+    <div class="modal">
+        <h3 id="modalTitle" style="margin-bottom:1.25rem">サブスク登録</h3>
+        <form id="subForm">
+            <input type="hidden" id="editId">
+            <div class="form-group"><label>サービス名</label><input type="text" id="name" required placeholder="例: Netflix"></div>
+            <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:0.75rem">
+                <div class="form-group"><label>金額</label><input type="number" id="amount" required placeholder="0"></div>
+                <div class="form-group"><label>周期</label>
+                    <select id="cycle"><option value="monthly">毎月</option><option value="yearly">毎年</option></select>
+                </div>
+            </div>
+            <div class="form-group"><label>次回請求日</label><input type="date" id="nextDate" required></div>
+            <div class="form-group"><label>カテゴリー</label>
+                <select id="categorySelect"></select>
+            </div>
+            <div class="form-group">
+                <label>備考（支払い元メモなど）</label>
+                <textarea id="memo" rows="2" placeholder="例: 楽天カード, ○○銀行口座振替"></textarea>
+            </div>
+            <div class="modal-footer" style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1.5rem;">
+                <button type="button" class="btn btn-outline" onclick="closeModal()">キャンセル</button>
+                <button type="submit" class="btn btn-primary">保存する</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // --- 初期データ ---
+    let subs = JSON.parse(localStorage.getItem('subscriptions')) || [];
+    let config = JSON.parse(localStorage.getItem('subsc_config')) || { 
+        currency: 'JPY',
+        categories: [
+            { id: "ent", name: "Entertainment" },
+            { id: "util", name: "Utilities" },
+            { id: "health", name: "Health" },
+            { id: "donate", name: "Donations" },
+            { id: "other", name: "Other" }
+        ]
+    };
+    let syncSettings = JSON.parse(localStorage.getItem('gh_sync_settings')) || null;
+
+    const symbols = { 'JPY': '¥', 'USD': '$', 'EUR': '€' };
+
+    // --- GitHub 同期ロジック ---
+    async function githubApiRequest(path, method = 'GET', body = null) {
+        if (!syncSettings) return alert('同期設定を行ってください');
+        const url = `https://api.github.com/repos/${syncSettings.user}/${syncSettings.repo}/contents/${path}`;
+        const headers = {
+            'Authorization': `token ${syncSettings.token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        };
+        const options = { method, headers };
+        if (body) options.body = JSON.stringify(body);
+        return fetch(url, options);
+    }
+
+    async function pushToGitHub() {
+        const path = 'data.json';
+        // サブスクデータとカテゴリ設定の両方を同期対象にする
+        const syncData = { subs, config };
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(syncData, null, 2))));
+        
+        const res = await githubApiRequest(path);
+        let sha = null;
+        if (res.ok) { const data = await res.json(); sha = data.sha; }
+
+        const pushRes = await githubApiRequest(path, 'PUT', {
+            message: 'Sync from SubTrack v8.1',
+            content: content,
+            sha: sha
+        });
+
+        if (pushRes.ok) alert('クラウドに保存しました！');
+        else alert('保存に失敗しました。トークンやリポジトリ名を確認してください。');
+    }
+
+    async function fetchFromGitHub() {
+        const res = await githubApiRequest('data.json');
+        if (!res.ok) return alert('クラウドにデータが見つかりません。先に「保存」を行ってください。');
+        
+        const data = await res.json();
+        const remoteData = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+        
+        if (confirm('クラウドからデータを読込ますか？現在の設定とリストは上書きされます。')) {
+            subs = remoteData.subs || remoteData; // 互換性維持
+            if (remoteData.config) config = remoteData.config;
+            save();
+            updateCategorySelect();
+            render();
+            alert('読込が完了しました！');
+        }
+    }
+
+    function saveSyncSettings() {
+        syncSettings = {
+            user: document.getElementById('ghUser').value,
+            repo: document.getElementById('ghRepo').value,
+            token: document.getElementById('ghToken').value
+        };
+        localStorage.setItem('gh_sync_settings', JSON.stringify(syncSettings));
+        document.getElementById('syncControls').classList.remove('hidden');
+        alert('同期設定をローカルに保存しました。');
+    }
+
+    // --- 日付の自動ロールオーバー ---
+    function autoUpdateBillingDates() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let hasChanged = false;
+
+        subs = subs.map(sub => {
+            if (sub.status === 'canceled') return sub;
+            let nextDate = new Date(sub.nextBillingDate);
+            while (nextDate < today) {
+                if (sub.cycle === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+                else nextDate.setFullYear(nextDate.getFullYear() + 1);
+                hasChanged = true;
+            }
+            return { ...sub, nextBillingDate: nextDate.toISOString().split('T')[0] };
+        });
+        if (hasChanged) save();
+    }
+
+    function save() {
+        localStorage.setItem('subscriptions', JSON.stringify(subs));
+        localStorage.setItem('subsc_config', JSON.stringify(config));
+    }
+
+    // --- カテゴリ操作 ---
+    function updateCategorySelect() {
+        const select = document.getElementById('categorySelect');
+        select.innerHTML = config.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        
+        const manager = document.getElementById('categoryManagerList');
+        manager.innerHTML = config.categories.map((c, index) => `
+            <div class="cat-item">
+                <div style="display: flex; gap: 2px;">
+                    <button class="btn btn-outline btn-icon" style="font-size: 0.6rem;" onclick="moveCategory('${c.id}', -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
+                    <button class="btn btn-outline btn-icon" style="font-size: 0.6rem;" onclick="moveCategory('${c.id}', 1)" ${index === config.categories.length - 1 ? 'disabled' : ''}>↓</button>
+                </div>
+                <input type="text" class="cat-name-input" value="${c.name}" onchange="renameCategory('${c.id}', this.value)">
+                ${c.id !== 'other' ? `<button class="btn btn-ghost btn-sm" style="color:var(--danger); padding: 0.4rem;" onclick="deleteCategory('${c.id}')">削除</button>` : '<div style="width:42px"></div>'}
+            </div>
+        `).join('');
+    }
+
+    function addCategory() {
+        const input = document.getElementById('newCatName');
+        const name = input.value.trim();
+        if (!name) return;
+        const newCat = { id: 'cat_' + Date.now(), name: name };
+        config.categories.push(newCat);
+        input.value = '';
+        save();
+        updateCategorySelect();
+    }
+
+    function renameCategory(id, newName) {
+        const trimmed = newName.trim();
+        if (!trimmed) return updateCategorySelect();
+        const cat = config.categories.find(c => c.id === id);
+        if (cat) {
+            cat.name = trimmed;
+            save();
+            render();
+        }
+    }
+
+    function moveCategory(id, direction) {
+        const index = config.categories.findIndex(c => c.id === id);
+        if (index === -1) return;
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= config.categories.length) return;
+        const temp = config.categories[index];
+        config.categories[index] = config.categories[newIndex];
+        config.categories[newIndex] = temp;
+        save();
+        updateCategorySelect();
+    }
+
+    function deleteCategory(id) {
+        if (id === 'other') return;
+        if (!confirm('このカテゴリを削除しますか？')) return;
+        config.categories = config.categories.filter(c => c.id !== id);
+        subs = subs.map(s => s.category === id ? { ...s, category: 'other' } : s);
+        save();
+        updateCategorySelect();
+        render();
+    }
+
+    function updateSettings() {
+        config.currency = document.getElementById('cfgCurrency').value;
+        save();
+        render();
+    }
+
+    function toggleSettings() {
+        const el = document.getElementById('settingsArea');
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // --- 描画 ---
+    function render() {
+        const listEl = document.getElementById('list');
+        const search = document.getElementById('search').value.toLowerCase();
+        const showCan = document.getElementById('showCanceled').checked;
+        const cur = symbols[config.currency] || '¥';
+
+        listEl.innerHTML = '';
+        let mTotal = 0;
+
+        const filtered = subs.filter(s => 
+            s.name.toLowerCase().includes(search) && (showCan || s.status === 'active')
+        ).sort((a,b) => new Date(a.nextBillingDate) - new Date(b.nextBillingDate));
+
+        if (filtered.length === 0) {
+            listEl.innerHTML = `<div style="text-align:center; padding:3rem; color:var(--text-sub); font-size:0.9rem;">データがありません</div>`;
+        }
+
+        filtered.forEach(s => {
+            const isCanceled = s.status === 'canceled';
+            if (!isCanceled) {
+                mTotal += (s.cycle === 'monthly' ? s.amount : s.amount / 12);
+            }
+
+            const catObj = config.categories.find(c => c.id === s.category) || { name: 'Other' };
+            const daysLeft = Math.ceil((new Date(s.nextBillingDate) - new Date()) / (1000 * 60 * 60 * 24));
+            const dateClass = (!isCanceled && daysLeft <= 3) ? 'date-alert' : 'sub-meta';
+            const memoHtml = s.memo ? `<div class="sub-memo">📝 ${s.memo}</div>` : '';
+
+            const card = document.createElement('div');
+            card.className = `sub-card ${isCanceled ? 'canceled' : ''}`;
+            card.innerHTML = `
+                <div class="sub-row">
+                    <div>
+                        <div class="sub-name">${s.name} ${isCanceled ? '<span class="badge badge-canceled">解約済</span>' : ''}</div>
+                        <div class="sub-meta">${catObj.name} ・ ${s.cycle === 'monthly' ? '月額' : '年額'}</div>
+                    </div>
+                    <div class="sub-amount">${cur}${Number(s.amount).toLocaleString()}</div>
+                </div>
+                <span class="${dateClass}">次回請求: ${s.nextBillingDate}</span>
+                ${memoHtml}
+                <div class="sub-actions">
+                    <button class="btn btn-outline btn-sm" onclick="edit('${s.id}')">編集</button>
+                    <button class="btn btn-outline btn-sm" style="color:${isCanceled ? 'var(--success)' : 'var(--danger)'}" onclick="toggleStatus('${s.id}')">
+                        ${isCanceled ? '再開' : '解約'}
+                    </button>
+                    ${isCanceled ? `<button class="btn btn-ghost btn-sm" onclick="hardDelete('${s.id}')">削除</button>` : ''}
+                </div>
+            `;
+            listEl.appendChild(card);
+        });
+
+        document.getElementById('monthlyTotal').textContent = `${cur}${Math.round(mTotal).toLocaleString()}`;
+        document.getElementById('yearlyTotal').textContent = `${cur}${Math.round(mTotal * 12).toLocaleString()}`;
+    }
+
+    // --- モーダル・保存 ---
+    function openModal(id = null) {
+        document.getElementById('modal').style.display = 'flex';
+        const form = document.getElementById('subForm');
+        form.reset();
+        document.getElementById('editId').value = id || '';
+        document.getElementById('modalTitle').textContent = id ? 'サブスク編集' : 'サブスク登録';
+
+        if (id) {
+            const s = subs.find(x => x.id === id);
+            document.getElementById('name').value = s.name;
+            document.getElementById('amount').value = s.amount;
+            document.getElementById('cycle').value = s.cycle;
+            document.getElementById('nextDate').value = s.nextBillingDate;
+            document.getElementById('categorySelect').value = s.category || 'other';
+            document.getElementById('memo').value = s.memo || '';
+        } else {
+            document.getElementById('nextDate').value = new Date().toISOString().split('T')[0];
+        }
+    }
+
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    document.getElementById('subForm').onsubmit = (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editId').value;
+        const data = {
+            id: id || Date.now().toString(),
+            name: document.getElementById('name').value,
+            amount: Number(document.getElementById('amount').value),
+            cycle: document.getElementById('cycle').value,
+            nextBillingDate: document.getElementById('nextDate').value,
+            category: document.getElementById('categorySelect').value,
+            memo: document.getElementById('memo').value,
+            status: id ? subs.find(x => x.id === id).status : 'active'
+        };
+
+        if (id) {
+            const idx = subs.findIndex(x => x.id === id);
+            subs[idx] = data;
+        } else {
+            subs.push(data);
+        }
+        save();
+        autoUpdateBillingDates();
+        render();
+        closeModal();
+    };
+
+    function toggleStatus(id) {
+        const s = subs.find(x => x.id === id);
+        s.status = s.status === 'active' ? 'canceled' : 'active';
+        save();
+        render();
+    }
+
+    function hardDelete(id) {
+        if(confirm('完全に削除しますか？')) {
+            subs = subs.filter(x => x.id !== id);
+            save();
+            render();
+        }
+    }
+
+    function edit(id) { openModal(id); }
+
+    function exportCSV() {
+        if(subs.length === 0) return;
+        let csv = "\uFEFFサービス名,金額,周期,次回請求,カテゴリ,ステータス,備考\n";
+        subs.forEach(s => {
+            const cat = config.categories.find(c => c.id === s.category)?.name || 'Other';
+            const memo = (s.memo || '').replace(/"/g, '""').replace(/\n/g, ' '); 
+            csv += `"${s.name}",${s.amount},${s.cycle === 'monthly' ? '月額' : '年額'},${s.nextBillingDate},"${cat}",${s.status === 'active' ? '有効' : '解約済'},"${memo}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `SubTrack_Data.csv`;
+        a.click();
+    }
+
+    // 初期化
+    if (syncSettings) {
+        document.getElementById('ghUser').value = syncSettings.user || '';
+        document.getElementById('ghRepo').value = syncSettings.repo || 'my-subsc-data';
+        document.getElementById('ghToken').value = syncSettings.token || '';
+        document.getElementById('syncControls').classList.remove('hidden');
+    }
+    updateCategorySelect();
+    autoUpdateBillingDates();
+    render();
+</script>
+</body>
+</html>

@@ -132,25 +132,34 @@
 </div>
 
 <div id="settingsModal" class="modal">
-    <h3>☁️ 同期設定</h3>
-    <p style="font-size:0.75rem; color:var(--text-sub);">GitHubリポジトリと接続して、データを安全にクラウド管理します。</p>
+    <h3>同期設定</h3>
+    <p style="font-size:0.75rem; color:var(--text-sub); margin-bottom: 20px;">GitHubリポジトリと接続して、データを安全にクラウド管理します。</p>
+    
     <label>GitHub ユーザー名</label>
     <input type="text" id="ghUser" placeholder="あなたのユーザー名">
-    <label>データ用リポジトリ名 (Private推奨)</label>
+    
+    <label>データ用リポジトリ名</label>
     <input type="text" id="ghRepo" placeholder="例: my-subsc-data">
-    <label>トークン (PAT) <a href="https://github.com/settings/tokens" target="_blank" style="font-size:0.6rem; color:var(--primary);">取得はこちら</a></label>
+    
+    <label>トークン (PAT)</label>
     <input type="password" id="ghToken" placeholder="github_pat_...">
     
-   <div id="syncControls" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+    <button class="btn btn-primary" onclick="saveSettings()">同期設定を保存</button>
+
+    <div id="syncControls" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;">
         <button class="btn btn-sync btn-fetch" onclick="fetchFromGitHub()">
             <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Fetch
+            読込
         </button>
         <button class="btn btn-sync btn-push" onclick="pushToGitHub()">
             <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Push
+            保存
         </button>
     </div>
+
+    <div id="status" class="sync-status">未同期</div>
+    <button class="btn btn-ghost" onclick="toggleModal('settingsModal')" style="margin-top: 25px;">閉じる</button>
+</div>
     <div id="status" class="sync-status">未同期</div>
     <button class="btn btn-ghost" onclick="toggleModal('settingsModal')" style="margin-top: 20px;">閉じる</button>
 </div>

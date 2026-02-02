@@ -100,10 +100,31 @@
         .welcome-guide p { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 20px; }
 
         /* 設定・フォーム */
-        .modal { background: var(--card); border-radius: 24px 24px 0 0; padding: 25px; box-shadow: 0 -10px 25px rgba(0,0,0,0.05); position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); max-height: 90vh; overflow-y: auto; }
-        .modal.active { transform: translateY(0); }
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 999; display: none; }
-        .overlay.active { display: block; }
+       .modal {
+            display: none; /* ← これを追加：基本は存在ごと消す */
+            background: var(--card);
+            border-radius: 24px 24px 0 0;
+            padding: 25px;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        /* 表示する時だけ出現させる */
+        .modal.active {
+            display: block; 
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
 
         input, select { width: 100%; padding: 12px; margin: 8px 0 16px; border: 1px solid var(--border); border-radius: 12px; font-size: 1rem; background: #f9fafb; } /* 入力欄の背景も微調整 */
         label { font-size: 0.85rem; font-weight: 600; color: var(--text-sub); }
@@ -145,8 +166,6 @@
     </div>
 </div>
 
-<button class="fab" onclick="prepareAdd()">＋</button>
-
 <div id="subModal" class="modal">
     <div class="modal-header">
         <h3 id="modalTitle">サブスクを追加</h3>
@@ -154,22 +173,18 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
     </div>
-
     <label>サービス名</label>
     <input type="text" id="subName" placeholder="Netflix, iCloudなど">
-    
     <label>金額 (¥)</label>
     <input type="number" id="subPrice" placeholder="980">
-    
     <label>支払いサイクル</label>
     <select id="subCycle">
         <option value="monthly">毎月</option>
         <option value="yearly">毎年</option>
     </select>
-    
     <button class="btn btn-primary" onclick="saveSub()">保存</button>
     <button id="deleteBtn" class="btn btn-danger" style="display:none;" onclick="deleteSub()">削除する</button>
-    </div>
+</div>
 
 <div id="settingsModal" class="modal">
     <div class="modal-header">
@@ -178,30 +193,18 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
     </div>
-    
-    <p style="font-size:0.75rem; color:var(--text-sub); margin-bottom: 20px;">GitHubリポジトリと接続して、データを安全にクラウド管理します。</p>
-    
     <label>GitHub ユーザー名</label>
-    <input type="text" id="ghUser" placeholder="あなたのユーザー名">
-    <label>データ用リポジトリ名</label>
-    <input type="text" id="ghRepo" placeholder="例: my-subsc-data">
+    <input type="text" id="ghUser">
+    <label>リポジトリ名</label>
+    <input type="text" id="ghRepo">
     <label>トークン (PAT)</label>
-    <input type="password" id="ghToken" placeholder="github_pat_...">
-    
+    <input type="password" id="ghToken">
     <button class="btn btn-primary" onclick="saveSettings()">同期設定を保存</button>
-
     <div id="syncControls" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;">
         <button class="btn btn-sync btn-fetch" onclick="fetchFromGitHub()">読込</button>
         <button class="btn btn-sync btn-push" onclick="pushToGitHub()">保存</button>
     </div>
     <div id="status" class="sync-status">未同期</div>
-    </div>
-
-    <div id="status" class="sync-status">未同期</div>
-    <button class="btn btn-ghost" onclick="toggleModal('settingsModal')" style="margin-top: 25px;">閉じる</button>
-</div>
-    <div id="status" class="sync-status">未同期</div>
-    <button class="btn btn-ghost" onclick="toggleModal('settingsModal')" style="margin-top: 20px;">閉じる</button>
 </div>
 
 <div id="overlay" class="overlay" onclick="closeAllModals()"></div>

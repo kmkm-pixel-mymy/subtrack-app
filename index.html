@@ -48,6 +48,38 @@
         .btn-fetch:hover { background: #f8fafc; border-color: #cbd5e1; color: #1e293b; }
         
         .sync-icon { width: 16px; height: 16px; stroke-width: 2.5; }
+
+        /* モーダル内の「×」ボタン用スタイル */
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .btn-close-icon {
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-sub);
+            transition: 0.2s;
+        }
+        
+        .btn-close-icon:active {
+            background: #e2e8f0;
+            transform: scale(0.9);
+        }
         
         /* ダッシュボード：色指定を削除してprimaryカラーに統一 */
         .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px; }
@@ -116,45 +148,53 @@
 <button class="fab" onclick="prepareAdd()">＋</button>
 
 <div id="subModal" class="modal">
-    <h3 id="modalTitle">サブスクを追加</h3>
+    <div class="modal-header">
+        <h3 id="modalTitle">サブスクを追加</h3>
+        <button class="btn-close-icon" onclick="closeAllModals()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+    </div>
+
     <label>サービス名</label>
     <input type="text" id="subName" placeholder="Netflix, iCloudなど">
+    
     <label>金額 (¥)</label>
     <input type="number" id="subPrice" placeholder="980">
+    
     <label>支払いサイクル</label>
     <select id="subCycle">
         <option value="monthly">毎月</option>
         <option value="yearly">毎年</option>
     </select>
+    
     <button class="btn btn-primary" onclick="saveSub()">保存</button>
     <button id="deleteBtn" class="btn btn-danger" style="display:none;" onclick="deleteSub()">削除する</button>
-    <button class="btn btn-ghost" onclick="toggleModal('subModal')">キャンセル</button>
-</div>
+    </div>
 
 <div id="settingsModal" class="modal">
-    <h3>同期設定</h3>
+    <div class="modal-header">
+        <h3>同期設定</h3>
+        <button class="btn-close-icon" onclick="closeAllModals()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+    </div>
+    
     <p style="font-size:0.75rem; color:var(--text-sub); margin-bottom: 20px;">GitHubリポジトリと接続して、データを安全にクラウド管理します。</p>
     
     <label>GitHub ユーザー名</label>
     <input type="text" id="ghUser" placeholder="あなたのユーザー名">
-    
     <label>データ用リポジトリ名</label>
     <input type="text" id="ghRepo" placeholder="例: my-subsc-data">
-    
     <label>トークン (PAT)</label>
     <input type="password" id="ghToken" placeholder="github_pat_...">
     
     <button class="btn btn-primary" onclick="saveSettings()">同期設定を保存</button>
 
     <div id="syncControls" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;">
-        <button class="btn btn-sync btn-fetch" onclick="fetchFromGitHub()">
-            <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            読込
-        </button>
-        <button class="btn btn-sync btn-push" onclick="pushToGitHub()">
-            <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            保存
-        </button>
+        <button class="btn btn-sync btn-fetch" onclick="fetchFromGitHub()">読込</button>
+        <button class="btn btn-sync btn-push" onclick="pushToGitHub()">保存</button>
+    </div>
+    <div id="status" class="sync-status">未同期</div>
     </div>
 
     <div id="status" class="sync-status">未同期</div>

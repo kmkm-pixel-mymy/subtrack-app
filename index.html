@@ -139,6 +139,7 @@
         .fab { position: fixed; bottom: 30px; right: 20px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: none; z-index: 90; }
     </style>
 </head>
+
 <body>
 
 <div class="header">
@@ -152,7 +153,8 @@
             <div class="stat-label">月額合計</div>
             <div id="monthlyTotal" class="stat-value">¥0</div>
         </div>
-        <div class="stat-card" style="opacity: 0.8;"> <div class="stat-label">年間合計</div>
+        <div class="stat-card" style="opacity: 0.8;"> 
+            <div class="stat-label">年間合計</div>
             <div id="yearlyTotal" class="stat-value">¥0</div>
         </div>
     </div>
@@ -165,6 +167,8 @@
         </div>
     </div>
 </div>
+
+<button class="fab" onclick="prepareAdd()">＋</button>
 
 <div id="subModal" class="modal">
     <div class="modal-header">
@@ -210,7 +214,6 @@
 <div id="overlay" class="overlay" onclick="closeAllModals()"></div>
 
 <script>
-    // JavaScriptのロジックは前回と全く同じです
     let subs = JSON.parse(localStorage.getItem('subs') || '[]');
     let editingIndex = -1;
 
@@ -233,7 +236,6 @@
         }
 
         let mTotal = 0, yTotal = 0;
-
         subs.forEach((sub, index) => {
             const price = parseInt(sub.price);
             mTotal += (sub.cycle === 'monthly') ? price : Math.round(price / 12);
@@ -251,7 +253,6 @@
             `;
             list.appendChild(card);
         });
-
         updateTotals(mTotal, yTotal);
     }
 
@@ -294,7 +295,6 @@
         const name = document.getElementById('subName').value;
         const price = document.getElementById('subPrice').value;
         const cycle = document.getElementById('subCycle').value;
-
         if(!name || !price) return alert('入力してください');
 
         const newSub = { name, price, cycle };
@@ -330,10 +330,8 @@
         const repo = localStorage.getItem('ghRepo');
         const token = localStorage.getItem('ghToken');
         const status = document.getElementById('status');
-
         if(!user || !repo || !token) return alert('設定が足りません');
         status.innerText = '⌛ 読込中...';
-
         try {
             const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/data.json`, {
                 headers: { Authorization: `token ${token}` }
@@ -354,10 +352,8 @@
         const repo = localStorage.getItem('ghRepo');
         const token = localStorage.getItem('ghToken');
         const status = document.getElementById('status');
-
         if(!user || !repo || !token) return alert('設定が足りません');
         status.innerText = '⌛ 保存中...';
-
         try {
             const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/data.json`, {
                 headers: { Authorization: `token ${token}` }
@@ -367,14 +363,12 @@
                 const data = await res.json();
                 sha = data.sha;
             }
-
             const content = btoa(unescape(encodeURIComponent(JSON.stringify(subs))));
             const putRes = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/data.json`, {
                 method: 'PUT',
                 headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: 'Sync subs', content, sha })
             });
-
             if (putRes.ok) status.innerText = '✅ クラウド保存完了！';
             else throw new Error('保存失敗');
         } catch (e) {
@@ -385,4 +379,5 @@
 </script>
 
 </body>
+    
 </html>
